@@ -166,6 +166,10 @@
   (transient-mark-mode 1)
   (deactivate-mark t))
 
+(defun moomin-buffer-parser ()
+  (decode-coding-string (buffer-string) 'utf-8)
+  )
+
 (defun moomin-login ()
   (request
    moomin-wiki-url-base
@@ -176,7 +180,7 @@
                                          (login . "Login")
                                          (login . "Login")))
    :headers (moomin-request-headers)
-   :parser 'buffer-string
+   :parser 'moomin-buffer-parser
    :sync t))
 
 (defun moomin-get-current-revision (page)
@@ -187,7 +191,7 @@
      :params '((action . "edit")
                (editor . "text"))
      :headers (moomin-request-headers)
-     :parser 'buffer-string
+     :parser 'moomin-buffer-parser
      :sync t
      :success (function*
                (lambda (&key data &allow-other-keys)
@@ -244,7 +248,7 @@
    :params '((action . "edit")
              (editor . "text"))
    :headers (moomin-request-headers)
-   :parser 'buffer-string
+   :parser 'moomin-buffer-parser
    :sync t
    :success (function*
              (lambda (&key data &allow-other-keys)
@@ -269,7 +273,7 @@
                      (comment . "")
                      (category . "")))
             :headers (moomin-request-headers)
-            :parser 'buffer-string
+            :parser 'moomin-buffer-parser
             :sync t
             :success (function*
                       (lambda (&key data &allow-other-keys)
@@ -304,7 +308,7 @@
    (concat moomin-wiki-url-base "?action=titleindex")
    :type "GET"
    :headers (moomin-request-headers)
-   :parser 'buffer-string
+   :parser 'moomin-buffer-parser
    :sync t
    :success (function*
              (lambda (&key data &allow-other-keys)
