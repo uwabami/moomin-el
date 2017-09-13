@@ -317,31 +317,26 @@
                (delete-trailing-whitespace)))))
 
 (defvar helm-source-moomin-page
-      '((name . "MoinMoin Wiki Page List")
-        (init . (lambda ()
-                  (with-current-buffer (helm-candidate-buffer "MoinMoin Wiki Pages")
-                    (moomin-get-page-list))))
-        (candidates-in-buffer)
-        (action
-         . (("Edit with emacs" . moomin-get-page)
-            ("Open in browser" . moomin-browse-url)))))
+  (helm-build-in-buffer-source "MoinMoin Wiki Page List"
+    :init (lambda ()
+            (with-current-buffer (helm-candidate-buffer 'global)
+              (moomin-get-page-list)))
+    :action '(("Edit with emacs" . moomin-get-page)
+              ("Open in browser" . moomin-browse-url))))
 
 (defvar helm-source-moomin-history
-      '((name . "MoinMoin Wiki Page History")
-        (init . (lambda ()
-                  (with-current-buffer (helm-candidate-buffer "MoinMoin Wiki History")
-                    (when (file-exists-p moomin-history-file)
-                      (insert-file-contents moomin-history-file)))))
-        (candidates-in-buffer)
-        (action
-         . (("Edit with emacs" . moomin-get-page)
-            ("Open in browser" . moomin-browse-url)
-            ("Delete from history" . moomin-delete-from-history)))))
+  (helm-build-in-buffer-source "MoinMoin Wiki History"
+    :init (lambda ()
+            (with-current-buffer (helm-candidate-buffer 'global)
+              (when (file-exists-p moomin-history-file)
+                (insert-file-contents moomin-history-file))))
+    :action '(("Edit with emacs" . moomin-get-page)
+              ("Open in browser" . moomin-browse-url)
+              ("Delete from history" . moomin-delete-from-history))))
 
 (defvar helm-source-moomin-not-found
-  `((name . "Create New Wiki Page")
-    (dummy)
-    (action . (("Edit with emacs" . moomin-get-page)))))
+  (helm-build-dummy-source "Create New Wiki Page"
+    :action  '(("Edit with emacs" . moomin-get-page))))
 
 (defun moomin-create-new-page (page)
   (interactive "sNewPage: ")
@@ -349,7 +344,8 @@
 
 (defun helm-moomin ()
   (interactive)
-  (helm '(helm-source-moomin-history helm-source-moomin-page helm-source-moomin-not-found)))
+  (helm :sources '(helm-source-moomin-history helm-source-moomin-page helm-source-moomin-not-found)
+        :buffer "*Helm Moomin*"))
 
 (add-hook 'moinmoin-mode 'moomin-moinmoin-mode-hook-function)
 
