@@ -1,55 +1,45 @@
 ;;; moomin.el --- Edit MoinMoin with Emacs
-;; $Lastupdate: 2017-09-13 18:58:45$
-;;
-;; Copyright (C) 2014 Toshiyuki Takahashi
-;;           (C) 2017 Youhei SASAKI (@uwabami)
-;;
+
+;; Copyright (C) 2014  Toshiyuki Takahashi
+
 ;; Author: Toshiyuki Takahashi (@tototoshi)
 ;; Version: 20170913
 ;; Keywords: MoinMoin
 ;; Package-Requires: ((helm-core "2.8") (request "0.3.0"))
-;;
+
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation, either version 3 of the License, or (at
-;; your option) any later version.
-;;
-;; This program is distributed in the hope that it will be useful, but
-;; WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-;; General Public License for more details.
-;;
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
-;;
-;;; Commentary;
-;;
-;; Original Version:
-;;  @see https://github.com/tototoshi/moomin-el by @tototshi
-;; Changed:
-;;  - Support Customize-Group
-;;  - Force decode UTF-8
-;;
+
 ;;; Usage:
-;;
-;; (require 'moomin)
-;;
-;; (setq moomin-wiki-url-base "http://your.moinmoin/wiki")
-;;
-;; (setq moomin-user "user")
-;; (setq moomin-password "password")
-;;
-;; ;; When your moin wiki requires basic authentication
-;; (setq moomin-basic-auth-user "user")
-;; (setq moomin-basic-auth-password "password")
-;;
-;; ;; Assign keybind to 'helm-moomin and 'moomin-save-current-buffer as you like
-;; (global-set-key (kbd "C-x w") 'helm-moomin)
-;; (add-hook 'moinmoin-mode-hook
-;;   (lambda ()
-;;     (define-key moinmoin-mode-map (kbd "C-c C-c") 'moomin-save-current-buffer)))
-;;
-;;
+;;;
+;;; (require 'moomin)
+;;;
+;;; (setq moomin-wiki-url-base "http://your.moinmoin/wiki")
+;;;
+;;; (setq moomin-user "user")
+;;; (setq moomin-password "password")
+;;;
+;;; ;; When your moin wiki requires basic authentication
+;;; (setq moomin-basic-auth-user "user")
+;;; (setq moomin-basic-auth-password "password")
+;;;
+;;; ;; Assign keybind to 'helm-moomin and 'moomin-save-current-buffer as you like
+;;; (global-set-key (kbd "C-x w") 'helm-moomin)
+;;; (add-hook 'moinmoin-mode-hook
+;;;   (lambda ()
+;;;     (define-key moinmoin-mode-map (kbd "C-c C-c") 'moomin-save-current-buffer)))
+;;;
+;;;
 ;;; Code:
 ;;;
 
@@ -57,43 +47,14 @@
 (require 'request)
 (require 'helm)
 
-(defgroup moomin nil
-  "Edit MoinMoin with Emacs."
-  :group 'web
-  :prefix "moomin-"
-  )
+(defvar moomin-basic-auth-user nil)
+(defvar moomin-basic-auth-password nil)
+(defvar moomin-wiki-url-base nil)
+(defvar moomin-user nil)
+(defvar moomin-password nil)
 
-(defcustom moomin-basic-auth-user nil
-  "BASIC auth username"
-  :type 'string
-  )
-
-(defcustom moomin-basic-auth-password nil
-  "BASIC auth username"
-  :type 'string)
-
-(defcustom moomin-wiki-url-base nil
-  "MoinMoin base URL"
-  :type 'string
-  :risky t)
-
-(defcustom moomin-user nil
-  "MoinMoin username"
-  :type 'string)
-
-(defcustom moomin-password nil
-  "MoinMoin password"
-  :type 'string
-  :risky t)
-
-(defcustom moomin-history-file
-  (concat user-emacs-directory ".moomin_history")
-  "History file"
-  :type 'sring)
-
-(defvar moomin-history-limit 10
-  "History limit"
-  :type 'integer)
+(defvar moomin-history-file "~/.emacs.d/.moomin_history")
+(defvar moomin-history-limit 10)
 
 (defvar moomin-current-buffer-rev nil)
 (defvar moomin-current-buffer-page-name nil)
@@ -205,9 +166,6 @@
   (transient-mark-mode 1)
   (deactivate-mark t))
 
-(defun moomin-buffer-parser ()
-  (decode-coding-string (buffer-string) 'utf-8))
-
 (defun moomin-login ()
   (request
    moomin-wiki-url-base
@@ -218,7 +176,7 @@
                                          (login . "Login")
                                          (login . "Login")))
    :headers (moomin-request-headers)
-   :parser 'moomin-buffer-parser
+   :parser 'buffer-string
    :sync t))
 
 (defun moomin-get-current-revision (page)
@@ -346,7 +304,7 @@
    (concat moomin-wiki-url-base "?action=titleindex")
    :type "GET"
    :headers (moomin-request-headers)
-   :parser 'moomin-buffer-parser
+   :parser 'buffer-string
    :sync t
    :success (function*
              (lambda (&key data &allow-other-keys)
@@ -385,7 +343,6 @@
   (interactive "sNewPage: ")
   (moomin-get-page page))
 
-;;;###autoload
 (defun helm-moomin ()
   (interactive)
   (helm '(helm-source-moomin-history helm-source-moomin-page helm-source-moomin-not-found)))
