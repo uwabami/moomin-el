@@ -2,6 +2,12 @@
 
 Edit MoinMoin with Emacs
 
+Original Version: [tototshi/moomin-el](https://github.com/tototoshi/moomin-el).
+
+Modified: 
+* Satoru Kurashiki [lurdan/moomin-el](https://github.com/lurdan/moomin-el), add [counsel](https://github.com/abo-abo/swiper) support. 
+* Youhei SASAKI(me), Add ido support
+
 ## Install
 
 Evaluate this script.
@@ -11,8 +17,6 @@ Evaluate this script.
   (require 'package)
   (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/") t)
   (package-initialize)
-  (unless (package-installed-p 'helm)
-    (package-refresh-contents) (package-install 'helm))
   (unless (package-installed-p 'request)
     (package-refresh-contents) (package-install 'request)))
 
@@ -24,9 +28,8 @@ Evaluate this script.
       (eval-print-last-sexp)))
   (require 'el-get)
   (let ((el-get-sources
-         '((:name screen-lines :type github :pkgname "emacsmirror/screen-lines")
-           (:name moinmoin-mode :type github :pkgname "tototoshi/moinmoin-mode")
-           (:name moomin :type github :pkgname "tototoshi/moomin-el"))))
+           (:name moinmoin-mode :type github :pkgname "uwabami/moinmoin-mode")
+           (:name moomin :type github :pkgname "uwabami/moomin-el"))))
     (dolist (p el-get-sources)
       (let ((package-name (plist-get p :name)))
         (unless (el-get-package-installed-p package-name)
@@ -38,7 +41,6 @@ Evaluate this script.
 
 (moomin-install-dependencies)
 ```
-
 
 ## Usage
 
@@ -55,7 +57,9 @@ Evaluate this script.
 (setq moomin-basic-auth-password "password")
 
 ;; Assign keybind to 'helm-moomin and 'moomin-save-current-buffer as you like
-(global-set-key (kbd "C-x w") 'helm-moomin)
+;; (global-set-key (kbd "C-x w") 'helm-moomin)
+;; (global-set-key (kbd "C-x w") 'counsel-moomin)
+;; (global-set-key (kbd "C-x w") 'ido-moomin)
 (add-hook 'moinmoin-mode-hook
           (lambda ()
             (define-key moinmoin-mode-map (kbd "C-c C-c") 'moomin-save-current-buffer)

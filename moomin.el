@@ -1,11 +1,12 @@
 ;;; moomin.el --- Edit MoinMoin with Emacs
 
 ;; Copyright (C) 2014  Toshiyuki Takahashi
+;;           (C) 2018  Youhei SASAKI
 
 ;; Author: Toshiyuki Takahashi (@tototoshi)
-;; Version: 20170913
+;; Version: 20180309
 ;; Keywords: MoinMoin
-;; Package-Requires: ((helm-core "2.8") (request "0.3.0"))
+;; Package-Requires: ((request "0.3.0"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -45,7 +46,6 @@
 
 (require 'moinmoin-mode)
 (require 'request)
-(require 'helm)
 
 (defvar moomin-basic-auth-user nil)
 (defvar moomin-basic-auth-password nil)
@@ -316,36 +316,95 @@
                (goto-char (point-min))
                (delete-trailing-whitespace)))))
 
-(defvar helm-source-moomin-page
-  (helm-build-in-buffer-source "MoinMoin Wiki Page List"
-    :init (lambda ()
-            (with-current-buffer (helm-candidate-buffer 'global)
-              (moomin-get-page-list)))
-    :action '(("Edit with emacs" . moomin-get-page)
-              ("Open in browser" . moomin-browse-url))))
-
-(defvar helm-source-moomin-history
-  (helm-build-in-buffer-source "MoinMoin Wiki History"
-    :init (lambda ()
-            (with-current-buffer (helm-candidate-buffer 'global)
-              (when (file-exists-p moomin-history-file)
-                (insert-file-contents moomin-history-file))))
-    :action '(("Edit with emacs" . moomin-get-page)
-              ("Open in browser" . moomin-browse-url)
-              ("Delete from history" . moomin-delete-from-history))))
-
-(defvar helm-source-moomin-not-found
-  (helm-build-dummy-source "Create New Wiki Page"
-    :action  '(("Edit with emacs" . moomin-get-page))))
-
+;;;###autoload
 (defun moomin-create-new-page (page)
   (interactive "sNewPage: ")
   (moomin-get-page page))
 
-(defun helm-moomin ()
+
+;;;###autoload
+(defun moomin-edit-page ()
   (interactive)
-  (helm :sources '(helm-source-moomin-history helm-source-moomin-page helm-source-moomin-not-found)
-        :buffer "*Helm Moomin*"))
+  (moomin-get-page (completing-read "EditPage: "
+                                    (with-temp-buffer
+                                      (moomin-get-page-list)
+                                      (split-string (buffer-string) "\n" t)))))
+
+;; -- helm support: start --
+(when (locate-library "helm")
+  (require 'helm)
+  (defvar helm-source-moomin-page
+    '((name . "MoinMoin Wiki Page List")
+      (init . (lambda ()
+                (with-current-buffer (helm-candidate-buffer "MoinMoin Wiki Pages")
+                  (moomin-get-page-list))))
+      (candidates-in-buffer)
+      (action
+       . (("Edit with emacs" . moomin-get-page)
+          ("Open in browser" . moomin-browse-url)))))
+
+  (defvar helm-source-moomin-history
+    '((name . "MoinMoin Wiki Page History")
+      (init . (lambda ()
+                (with-current-buffer (helm-candidate-buffer "MoinMoin Wiki History")
+                  (when (file-exists-p moomin-history-file)
+                    (insert-file-contents moomin-history-file)))))
+      (candidates-in-buffer)
+      (action
+       . (("Edit with emacs" . moomin-get-page)
+          ("Open in browser" . moomin-browse-url)
+          ("Delete from history" . moomin-delete-from-history)))))
+
+  (defvar helm-source-moomin-not-found
+    `((name . "Create New Wiki Page")
+      (dummy)
+      (action . (("Edit with emacs" . moomin-get-page)))))
+
+;;;###autoload
+  (defun helm-moomin ()
+    (interactive)
+    (helm '(helm-source-moomin-history
+            helm-source-moomin-page
+            helm-source-moomin-not-found)))
+  )
+;; -- helm support: end --
+
+;; -- counsel support: start --
+
+(when (locate-library "counsel")
+  (defvar counsel-moomin-history nil
+    "History for `counsel-moomin'.")
+
+  (defvar counsel-moomin-page-list-cache nil
+    "")
+
+  (defun counsel-moomin-get-page-list ()
+    (unless (and counsel-moomin-page-list-cache (not ivy-current-prefix-arg))
+      (with-temp-buffer
+        (moomin-get-page-list)
+        (setq counsel-moomin-page-list-cache (split-string (buffer-string) "\n" t))
+        ))
+    counsel-moomin-page-list-cache
+    )
+
+  (ivy-set-actions 'counsel-moomin
+                   '(("b" moomin-browse-url "Open in browser")
+                     ("n" moomin-create-new-page "Create new page")
+                     ))
+
+;;;###autoload
+  (defun counsel-moomin ()
+    (interactive)
+    (ivy-read "Moomin: " (counsel-moomin-get-page-list)
+              ;;(append
+              ;; (delete-dups counsel-moomin-history) (counsel-moomin-get-page-list))
+              :action #'moomin-get-page
+              :history 'counsel-moomin-history
+              :sort 'sort
+              ))
+  )
+
+;; -- counsel support: end --
 
 (add-hook 'moinmoin-mode 'moomin-moinmoin-mode-hook-function)
 
