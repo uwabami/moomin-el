@@ -329,6 +329,29 @@
                                     (with-temp-buffer
                                       (moomin-get-page-list)
                                       (split-string (buffer-string) "\n" t)))))
+;; -- ido support: start --
+;;;###autoload
+(defun ido-moomin ()
+  "Ido interface for moomin"
+  (interactive)
+  (if (and (featurep 'ido-vertical-mode)
+           ido-vertical-mode)
+      (let ((page
+             (ido-completing-read "EditPage/Create New Page: "
+                                  (with-temp-buffer
+                                    (insert (format "%s" "*Create New Page*\n"))
+                                    (moomin-get-page-list)
+                                    (split-string (buffer-string) "\n" t)))))
+        (if (string-match "Create New Page" page)
+            (moomin-create-new-page
+             (read-from-minibuffer "New Page: "))
+          (moomin-get-page page)))
+    (moomin-get-page
+     (ido-completing-read "EditPage: "
+                          (with-temp-buffer
+                            (moomin-get-page-list)
+                            (split-string (buffer-string) "\n" t))))))
+;; -- ido support: end --
 
 ;; -- helm support: start --
 (when (locate-library "helm")
